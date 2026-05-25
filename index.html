@@ -269,11 +269,18 @@ body {
           <input class="input" type="url" id="api-url" placeholder="https://script.google.com/macros/s/…/exec">
           <button class="btn btn-outline btn-sm" onclick="saveUrl()">Connect</button>
         </div>
-        <div class="connected-note" id="connected-note" style="font-size:12px;font-weight:500;margin-top:6px;display:none"></div>
+        <div id="connected-note" style="font-size:12px;font-weight:500;margin-top:6px;display:none"></div>
       </div>
       <div class="field">
         <label class="field-label">Admin Key</label>
         <input class="input" type="password" id="admin-key" value="ADMIN123">
+      </div>
+
+      <!-- Diagnostic panel — hidden until connection fails -->
+      <div id="diag-panel" style="display:none;margin-top:16px;background:#f8f9fa;border:1px solid #e2e2ea;border-radius:8px;padding:16px">
+        <div style="font-size:12px;font-weight:600;color:#3c3c45;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">🔍 Diagnostic Results</div>
+        <div id="diag-output" style="font-size:12px;font-family:'DM Mono',monospace;line-height:2;color:#3c3c45"></div>
+        <div style="margin-top:12px;font-size:12px;color:#7a7a88;line-height:1.6" id="diag-advice"></div>
       </div>
     </div>
   </div>
@@ -405,52 +412,152 @@ body {
 let API_URL = "";
 let _currentCode = "", _currentOvCode = "";
 
-// ── Connect ───────────────────────────────────────────────
-// Apps Script blocks cross-origin GET requests (no CORS headers on doGet).
-// We test the connection with a lightweight POST to get_sessions instead —
-// Apps Script allows cross-origin POST with Content-Type: text/plain.
+// ── Connect + Diagnostics ─────────────────────────────────
 async function saveUrl() {
   const raw  = document.getElementById("api-url").value.trim();
   const note = document.getElementById("connected-note");
   const btn  = document.querySelector(".setup-box .btn-outline");
+  const diagPanel  = document.getElementById("diag-panel");
+  const diagOutput = document.getElementById("diag-output");
+  const diagAdvice = document.getElementById("diag-advice");
 
   const v = raw.replace(/\/+$/, "").trim();
+  diagPanel.style.display = "none";
+  diagOutput.innerHTML = "";
 
+  // ── Step 1: URL format check ──────────────────────────
+  if (!v) {
+    _setNote(note, "red", "✗ Please paste your Apps Script URL first.");
+    return;
+  }
   if (!v.startsWith("https://script.google.com/macros/s/")) {
-    note.style.display = "block";
-    note.style.color   = "var(--red)";
-    note.textContent   = "✗ Invalid URL — must start with https://script.google.com/macros/s/";
+    _setNote(note, "red", "✗ URL must start with https://script.google.com/macros/s/");
+    diagPanel.style.display = "block";
+    diagOutput.innerHTML = _diagLine("URL format", "FAIL", "Got: " + v.slice(0, 60));
+    diagAdvice.innerHTML = "Copy the URL from Apps Script → Deploy → Manage deployments → Copy the Web app URL.";
+    return;
+  }
+  if (!v.endsWith("/exec")) {
+    _setNote(note, "red", "✗ URL must end with /exec");
+    diagPanel.style.display = "block";
+    diagOutput.innerHTML = _diagLine("URL ends with /exec", "FAIL", "Got: ..." + v.slice(-20));
+    diagAdvice.innerHTML = "Make sure you copied the full URL. It should end exactly with <strong>/exec</strong>.";
     return;
   }
 
+  _setNote(note, "orange", "Testing connection…");
   note.style.display = "block";
-  note.style.color   = "var(--orange)";
-  note.textContent   = "Testing connection…";
   if (btn) { btn.disabled = true; btn.textContent = "Testing…"; }
+  API_URL = v;
 
-  API_URL = v; // Set before calling api()
+  diagPanel.style.display = "block";
+  let diagHtml = "";
+  diagHtml += _diagLine("URL format", "OK", v.slice(0, 50) + "…");
 
+  // ── Step 2: Network reachability (POST test) ──────────
+  let postOk = false, postError = "", postData = null;
   try {
-    const d = await api("get_sessions"); // Lightweight POST test
-    // Any valid JSON response (even unauthorized) means the URL is reachable
-    note.style.color = "var(--green)";
-    note.textContent = "✓ Connected";
-    try { localStorage.setItem("quiz_admin_api_url", v); } catch (_) {}
-    if (d.ok) _renderSessions(d.sessions);
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 15000);
+
+    const r = await fetch(v, {
+      method: "POST",
+      redirect: "follow",
+      signal: ctrl.signal,
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "get_sessions", adminKey: document.getElementById("admin-key").value })
+    });
+
+    diagHtml += _diagLine("Network reachable", "OK", "HTTP " + r.status);
+
+    const text = await r.text();
+    diagHtml += _diagLine("Got response body", "OK", text.slice(0, 80));
+
+    try {
+      postData = JSON.parse(text);
+      diagHtml += _diagLine("Response is JSON", "OK", "");
+      postOk = true;
+    } catch (_) {
+      postError = "Response is not JSON — got HTML instead (usually means script requires Google login or threw an exception)";
+      diagHtml += _diagLine("Response is JSON", "FAIL", text.slice(0, 100));
+    }
+
   } catch (e) {
-    API_URL = "";
-    note.style.color = "var(--red)";
-    note.textContent = "✗ Failed: " + e.message;
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "Connect"; }
+    const msg = e.name === "AbortError" ? "Request timed out after 15s" : e.message;
+    postError = msg;
+    diagHtml += _diagLine("Network reachable", "FAIL", msg);
   }
+
+  // ── Step 3: Auth check ────────────────────────────────
+  if (postOk && postData) {
+    if (postData.error === "unauthorized") {
+      diagHtml += _diagLine("Admin key", "FAIL", "Key rejected by server");
+      postOk = false;
+      postError = "Admin key incorrect";
+    } else if (postData.ok === false) {
+      diagHtml += _diagLine("Server response", "WARN", "ok:false — " + (postData.error || "unknown"));
+    } else {
+      diagHtml += _diagLine("Admin key", "OK", "Accepted");
+      diagHtml += _diagLine("Server response", "OK", "ok:true — " + (postData.sessions ? postData.sessions.length + " sessions" : ""));
+    }
+  }
+
+  diagOutput.innerHTML = diagHtml;
+
+  // ── Outcome ───────────────────────────────────────────
+  if (postOk && postData && postData.ok !== false) {
+    _setNote(note, "green", "✓ Connected");
+    try { localStorage.setItem("quiz_admin_api_url", v); } catch (_) {}
+    diagAdvice.innerHTML = "✓ Everything looks good.";
+    if (postData.sessions) _renderSessions(postData.sessions);
+  } else {
+    API_URL = "";
+    _setNote(note, "red", "✗ Connection failed — see diagnostics below");
+    diagAdvice.innerHTML = _getAdvice(postError);
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = "Connect"; }
+}
+
+function _setNote(el, colour, msg) {
+  const colours = { green: "#059669", red: "#dc2626", orange: "#d97706" };
+  el.style.display = "block";
+  el.style.color   = colours[colour] || colour;
+  el.textContent   = msg;
+}
+
+function _diagLine(label, status, detail) {
+  const colours = { OK: "#059669", FAIL: "#dc2626", WARN: "#d97706" };
+  const icons   = { OK: "✓", FAIL: "✗", WARN: "⚠" };
+  const c = colours[status] || "#3c3c45";
+  const i = icons[status]   || "·";
+  return `<div><span style="color:${c};font-weight:700">${i} ${label}</span>${detail ? ` — <span style="color:#7a7a88">${detail}</span>` : ""}</div>`;
+}
+
+function _getAdvice(error) {
+  const e = (error || "").toLowerCase();
+  if (e.includes("failed to fetch") || e.includes("networkerror") || e.includes("load")) {
+    return `<strong>Network error.</strong> Possible causes:<br>
+    1. You are on a network that blocks Google services.<br>
+    2. The script deployment is set to require Google login — open Apps Script → Deploy → Manage deployments → Edit → change "Who has access" to <strong>Anyone</strong>.<br>
+    3. The URL is from a test deployment — make sure it's a <strong>New deployment</strong> (not "Test deployments").`;
+  }
+  if (e.includes("timed out")) {
+    return `<strong>Timeout.</strong> The script took more than 15 seconds to respond. This can happen when Apps Script is cold-starting. Try again in 10 seconds.`;
+  }
+  if (e.includes("not json") || e.includes("html")) {
+    return `<strong>Got HTML instead of JSON.</strong> This almost always means the script requires a Google login, or the deployment wasn't saved correctly.<br>
+    Fix: Apps Script → Deploy → Manage deployments → Edit → Who has access → <strong>Anyone</strong> → Deploy → copy the new /exec URL.`;
+  }
+  if (e.includes("unauthorized") || e.includes("admin key")) {
+    return `<strong>Wrong admin key.</strong> The key in the Admin Key field does not match <code>ADMIN123</code> (or whatever you set in Code.gs).`;
+  }
+  return `<strong>Unknown error: ${error}</strong><br>Check the Apps Script execution logs: Apps Script editor → Executions tab.`;
 }
 
 // ── API ───────────────────────────────────────────────────
-// Apps Script requires Content-Type: text/plain (not application/json)
-// to avoid triggering a CORS preflight that it cannot satisfy.
 async function api(action, payload = {}) {
-  if (!API_URL) throw new Error("Not connected — paste the Apps Script URL and click Connect.");
+  if (!API_URL) throw new Error("Not connected — paste the URL and click Connect.");
   const r = await fetch(API_URL, {
     method: "POST",
     redirect: "follow",
@@ -460,7 +567,7 @@ async function api(action, payload = {}) {
   if (!r.ok) throw new Error("HTTP " + r.status);
   const text = await r.text();
   try { return JSON.parse(text); }
-  catch (_) { throw new Error("Bad response: " + text.slice(0, 120)); }
+  catch (_) { throw new Error("Non-JSON response — " + text.slice(0, 80)); }
 }
 
 // ── GPS ───────────────────────────────────────────────────
