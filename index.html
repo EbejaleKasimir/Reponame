@@ -269,7 +269,7 @@ body {
           <input class="input" type="url" id="api-url" placeholder="https://script.google.com/macros/s/…/exec">
           <button class="btn btn-outline btn-sm" onclick="saveUrl()">Connect</button>
         </div>
-        <div class="connected-note" id="connected-note">✓ Connected</div>
+        <div class="connected-note" id="connected-note" style="font-size:12px;font-weight:500;margin-top:6px;display:none"></div>
       </div>
       <div class="field">
         <label class="field-label">Admin Key</label>
@@ -406,24 +406,76 @@ let API_URL = "";
 let _currentCode = "", _currentOvCode = "";
 
 // ── Connect ───────────────────────────────────────────────
-function saveUrl() {
-  const v = document.getElementById("api-url").value.trim();
-  if (!v.startsWith("https://script.google.com")) { alert("Enter a valid Apps Script URL."); return; }
+async function saveUrl() {
+  const raw = document.getElementById("api-url").value.trim();
+  const note = document.getElementById("connected-note");
+  const btn  = document.querySelector(".setup-box .btn-outline");
+
+  // Strip any accidental trailing slashes or query strings the user pasted
+  const v = raw.replace(/\/+$/, "").split("?")[0].trim();
+
+  if (!v.startsWith("https://script.google.com/macros/s/")) {
+    note.style.display  = "block";
+    note.style.color    = "var(--red)";
+    note.textContent    = "✗ Not a valid Apps Script URL — should start with https://script.google.com/macros/s/";
+    return;
+  }
+
+  note.style.display = "block";
+  note.style.color   = "var(--orange)";
+  note.textContent   = "Testing connection…";
+  if (btn) { btn.disabled = true; btn.textContent = "Testing…"; }
+
   API_URL = v;
-  document.getElementById("connected-note").style.display = "block";
-  loadSessions();
+
+  // Test with a GET ping — doGet() returns { ok: true, message: "Quiz API is running" }
+  try {
+    const r = await fetch(API_URL, {
+      method: "GET",
+      redirect: "follow"
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    if (d.ok) {
+      note.style.color = "var(--green)";
+      note.textContent = "✓ Connected successfully";
+      try { localStorage.setItem("quiz_admin_api_url", v); } catch (_) {}
+      loadSessions();
+    } else {
+      throw new Error(d.message || "Unexpected response");
+    }
+  } catch (e) {
+    API_URL = "";
+    note.style.color = "var(--red)";
+    note.textContent = "✗ Connection failed: " + e.message + " — check the URL and that the script is deployed as \"Anyone\" can access";
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Connect"; }
+  }
 }
 
 // ── API ───────────────────────────────────────────────────
+// Apps Script deployments redirect the POST request.
+// Using redirect:"follow" and no-cache headers ensures the
+// final response is read, not the intermediate 302.
 async function api(action, payload = {}) {
-  if (!API_URL) throw new Error("No Apps Script URL — please connect first.");
+  if (!API_URL) {
+    throw new Error("Not connected — paste your Apps Script URL and click Connect first.");
+  }
   const r = await fetch(API_URL, {
     method: "POST",
+    redirect: "follow",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({ action, adminKey: document.getElementById("admin-key").value, ...payload })
   });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
+  // Apps Script always returns 200 on the final response even for errors;
+  // non-200 here means the redirect chain itself failed (network/CORS issue)
+  if (!r.ok) throw new Error(`HTTP ${r.status} — check the URL and deployment permissions`);
+  const text = await r.text();
+  try {
+    return JSON.parse(text);
+  } catch (_) {
+    throw new Error("Invalid response from server — got: " + text.slice(0, 120));
+  }
 }
 
 // ── GPS ───────────────────────────────────────────────────
@@ -597,6 +649,16 @@ function showAlert(id, type, msg) {
 function hideAlert(id) {
   document.getElementById(id).classList.remove("show");
 }
+
+// ── Restore saved URL on page load ───────────────────────
+(function restoreSavedUrl() {
+  try {
+    const saved = localStorage.getItem("quiz_admin_api_url");
+    if (saved) {
+      document.getElementById("api-url").value = saved;
+    }
+  } catch (_) {}
+})();
 </script>
 </body>
 </html>
