@@ -4,455 +4,598 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Admin Panel</title>
-<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --purple:#673AB7; --purple-light:#EDE7F6;
-    --red:#d93025; --green:#1e8e3e; --orange:#e37400; --blue:#1a73e8;
-    --gray-1:#f8f9fa; --gray-2:#e8eaed; --gray-3:#dadce0; --gray-4:#9aa0a6; --gray-5:#5f6368;
-    --text:#202124;
-  }
-  body { font-family:'Roboto',sans-serif; background:#f0ebf8; min-height:100vh; color:var(--text); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  .header { background:var(--purple); padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 8px rgba(0,0,0,.2); }
-  .header-left { display:flex; align-items:center; gap:12px; }
-  .header-title { font-family:'Google Sans',sans-serif; font-size:20px; color:white; font-weight:500; }
-  .header-badge { background:rgba(255,255,255,.2); color:white; font-size:11px; font-weight:500; padding:3px 8px; border-radius:12px; letter-spacing:.5px; }
+:root {
+  --ink: #0f0f11;
+  --ink-2: #3c3c45;
+  --ink-3: #7a7a88;
+  --ink-4: #b8b8c4;
+  --surface: #ffffff;
+  --surface-2: #f5f5f8;
+  --surface-3: #ededf2;
+  --border: #e2e2ea;
+  --accent: #4f46e5;
+  --accent-light: #eef2ff;
+  --green: #059669;
+  --green-light: #ecfdf5;
+  --red: #dc2626;
+  --red-light: #fef2f2;
+  --orange: #d97706;
+  --orange-light: #fffbeb;
+  --blue: #2563eb;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.06);
+}
 
-  .main { max-width:800px; margin:0 auto; padding:24px 16px 80px; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--surface-2);
+  color: var(--ink);
+  min-height: 100vh;
+}
 
-  .card { background:white; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.12); margin-bottom:16px; overflow:hidden; }
-  .card-header { padding:16px 24px; border-bottom:1px solid var(--gray-2); display:flex; align-items:center; gap:10px; }
-  .card-header h2 { font-family:'Google Sans',sans-serif; font-size:16px; font-weight:500; }
-  .card-body { padding:24px; }
+/* ── Top bar ─────────────────────────────────────────────── */
+.topbar {
+  background: var(--accent);
+  height: 58px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 12px;
+  box-shadow: 0 2px 12px rgba(79,70,229,.3);
+}
+.topbar-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -.2px;
+}
+.topbar-pill {
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
 
-  .field-group { margin-bottom:16px; }
-  .field-label { display:block; font-size:13px; color:var(--gray-5); margin-bottom:6px; font-weight:500; text-transform:uppercase; letter-spacing:.4px; }
-  .text-input { width:100%; border:1px solid var(--gray-3); border-radius:4px; padding:10px 12px; font-size:14px; font-family:'Roboto',sans-serif; color:var(--text); outline:none; transition:border-color .15s; }
-  .text-input:focus { border-color:var(--purple); border-width:2px; }
+/* ── Layout ─────────────────────────────────────────────── */
+.wrap { max-width: 780px; margin: 0 auto; padding: 24px 16px 80px; }
 
-  .row { display:grid; gap:12px; }
-  .row-2 { grid-template-columns:1fr 1fr; }
-  .row-3 { grid-template-columns:1fr 1fr 1fr; }
+/* ── Card ─────────────────────────────────────────────────  */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.card-hd {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-hd-left { display: flex; align-items: center; gap: 8px; }
+.card-hd h2 { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: -.1px; }
+.card-bd { padding: 22px; }
 
-  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 20px; border-radius:4px; border:none; font-family:'Google Sans',sans-serif; font-size:14px; font-weight:500; cursor:pointer; transition:background .15s; }
-  .btn-purple { background:var(--purple); color:white; width:100%; }
-  .btn-purple:hover:not(:disabled) { background:#5e35b1; }
-  .btn-purple:disabled { background:var(--gray-3); color:var(--gray-4); cursor:not-allowed; }
-  .btn-red { background:var(--red); color:white; }
-  .btn-red:hover { background:#c62828; }
-  .btn-outline { background:white; color:var(--purple); border:1px solid var(--purple); }
-  .btn-outline:hover { background:var(--purple-light); }
-  .btn-sm { padding:6px 12px; font-size:13px; }
+/* ── Setup box ───────────────────────────────────────────── */
+.setup-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.setup-box strong { display: block; font-size: 13px; color: #1d4ed8; margin-bottom: 10px; font-weight: 600; }
+.input-row { display: flex; gap: 8px; }
+.connected-note { font-size: 12px; color: var(--green); font-weight: 500; margin-top: 6px; display: none; }
 
-  /* Big code display */
-  .code-display { background:var(--purple); border-radius:12px; padding:32px 24px; text-align:center; margin-top:20px; display:none; }
-  .code-display.visible { display:block; }
-  .code-label { color:rgba(255,255,255,.7); font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
-  .code-number { font-family:'Google Sans',sans-serif; font-size:64px; font-weight:400; color:white; letter-spacing:12px; line-height:1; }
-  .code-dept { color:rgba(255,255,255,.8); font-size:14px; margin-top:12px; }
-  .code-expires { color:rgba(255,255,255,.6); font-size:12px; margin-top:6px; }
-  .code-copy { margin-top:16px; background:rgba(255,255,255,.15); color:white; border:1px solid rgba(255,255,255,.3); padding:8px 20px; border-radius:4px; font-size:13px; cursor:pointer; font-family:'Google Sans',sans-serif; }
-  .code-copy:hover { background:rgba(255,255,255,.25); }
+/* ── Grid ────────────────────────────────────────────────── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+@media (max-width: 520px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
 
-  /* Alert */
-  .alert { padding:12px 16px; border-radius:6px; font-size:13px; margin-top:16px; display:none; line-height:1.5; }
-  .alert.visible { display:block; }
-  .alert-error { background:#fce8e6; color:#c62828; border:1px solid #ef9a9a; }
-  .alert-success { background:#e6f4ea; color:#1e7e34; border:1px solid #a8d5b5; }
+/* ── Fields ──────────────────────────────────────────────── */
+.field { margin-bottom: 16px; }
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  margin-bottom: 6px;
+}
+.input {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--ink);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  background: var(--surface);
+}
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+.input.code-style { font-family: 'DM Mono', monospace; font-size: 14px; letter-spacing: 4px; }
+.loc-note { font-size: 12px; color: var(--ink-3); margin-top: 6px; display: none; }
+.loc-note.show { display: block; }
 
-  /* Sessions table */
-  .sessions-table { width:100%; border-collapse:collapse; font-size:13px; }
-  .sessions-table th { text-align:left; padding:10px 12px; border-bottom:2px solid var(--gray-2); color:var(--gray-5); font-weight:500; font-size:12px; text-transform:uppercase; letter-spacing:.4px; }
-  .sessions-table td { padding:10px 12px; border-bottom:1px solid var(--gray-2); }
-  .sessions-table tr:last-child td { border-bottom:none; }
-  .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:500; }
-  .badge-active  { background:#e6f4ea; color:var(--green); }
-  .badge-expired { background:var(--gray-1); color:var(--gray-5); }
-  .badge-ended   { background:#fce8e6; color:var(--red); }
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 16px; border-radius: 8px; border: none;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.btn-accent  { background: var(--accent); color: #fff; }
+.btn-accent:hover:not(:disabled) { background: #4338ca; }
+.btn-accent:disabled { background: var(--surface-3); color: var(--ink-4); cursor: not-allowed; }
+.btn-outline { background: var(--surface); color: var(--accent); border: 1.5px solid var(--accent); }
+.btn-outline:hover { background: var(--accent-light); }
+.btn-danger  { background: var(--red); color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-sm      { padding: 6px 12px; font-size: 12px; }
+.btn-full    { width: 100%; }
 
-  /* Gps own location */
-  .my-loc { font-size:12px; color:var(--gray-5); margin-top:8px; padding:8px 10px; background:var(--gray-1); border-radius:4px; display:none; }
-  .my-loc.visible { display:block; }
+/* ── Big code display ────────────────────────────────────── */
+.code-stage {
+  background: linear-gradient(135deg, var(--accent) 0%, #7c3aed 100%);
+  border-radius: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  margin-top: 20px;
+  display: none;
+}
+.code-stage.show { display: block; }
+.code-eyebrow { color: rgba(255,255,255,.65); font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 8px; }
+.code-big {
+  font-family: 'DM Mono', monospace;
+  font-size: 56px;
+  font-weight: 500;
+  color: #fff;
+  letter-spacing: 10px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.code-meta { color: rgba(255,255,255,.7); font-size: 13px; margin-bottom: 4px; }
+.code-expires-note { color: rgba(255,255,255,.5); font-size: 12px; margin-bottom: 16px; }
+.code-copy-btn {
+  background: rgba(255,255,255,.15); color: #fff;
+  border: 1px solid rgba(255,255,255,.3);
+  padding: 8px 20px; border-radius: 6px;
+  font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 500;
+  cursor: pointer; transition: background .15s;
+}
+.code-copy-btn:hover { background: rgba(255,255,255,.25); }
 
-  /* Attendance count */
-  .stats-row { display:flex; gap:12px; margin-bottom:16px; }
-  .stat-box { flex:1; background:var(--gray-1); border-radius:8px; padding:16px; text-align:center; }
-  .stat-num { font-family:'Google Sans',sans-serif; font-size:28px; color:var(--purple); font-weight:400; }
-  .stat-label { font-size:12px; color:var(--gray-5); margin-top:4px; }
+/* ── Override stage ──────────────────────────────────────── */
+.override-stage {
+  background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-top: 16px;
+  display: none;
+}
+.override-stage.show { display: block; }
+.override-name { color: rgba(255,255,255,.8); font-size: 13px; margin-bottom: 6px; }
+.override-code-big {
+  font-family: 'DM Mono', monospace;
+  font-size: 48px;
+  font-weight: 500;
+  color: #fff;
+  letter-spacing: 10px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.override-expiry { color: rgba(255,255,255,.6); font-size: 12px; margin-bottom: 14px; }
+.override-warn {
+  background: rgba(0,0,0,.12); border-radius: 6px;
+  padding: 10px 14px; font-size: 12px; color: rgba(255,255,255,.8);
+  line-height: 1.5; margin-top: 12px; text-align: left;
+}
 
-  .setup-section { background:#e8f0fe; border:1px solid #aecbfa; border-radius:8px; padding:16px; margin-bottom:20px; }
-  .setup-section strong { display:block; font-size:14px; color:#1557b0; margin-bottom:8px; }
-  .url-row { display:flex; gap:8px; }
-  .url-row .text-input { flex:1; font-size:13px; }
-  .url-row .btn { padding:8px 14px; font-size:13px; white-space:nowrap; }
-  .url-saved { color:var(--green); font-size:12px; margin-top:6px; display:none; }
+/* ── Alert ───────────────────────────────────────────────── */
+.alert {
+  padding: 11px 14px; border-radius: 8px; font-size: 13px;
+  line-height: 1.5; margin-top: 14px; display: none;
+}
+.alert.show { display: block; }
+.alert-error   { background: var(--red-light);    border: 1px solid #fecaca; color: #991b1b; }
+.alert-success { background: var(--green-light);  border: 1px solid #a7f3d0; color: #065f46; }
 
-  .spinner { width:20px; height:20px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; }
-  @keyframes spin { to{transform:rotate(360deg)} }
+/* ── Table ───────────────────────────────────────────────── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.data-table th {
+  text-align: left; padding: 9px 12px;
+  border-bottom: 2px solid var(--surface-3);
+  color: var(--ink-3); font-weight: 600; font-size: 10px;
+  text-transform: uppercase; letter-spacing: .6px;
+}
+.data-table td { padding: 9px 12px; border-bottom: 1px solid var(--surface-3); }
+.data-table tr:last-child td { border-bottom: none; }
 
-  /* Override code display */
-  .override-display { background:#1e7e34; border-radius:12px; padding:24px; text-align:center; margin-top:16px; display:none; }
-  .override-display.visible { display:block; }
-  .override-code-big { font-family:'Google Sans',sans-serif; font-size:52px; font-weight:400; color:white; letter-spacing:10px; line-height:1; margin:8px 0; }
-  .override-student { color:rgba(255,255,255,.85); font-size:14px; margin-bottom:4px; }
-  .override-expiry { color:rgba(255,255,255,.6); font-size:12px; margin-bottom:12px; }
-  .override-copy { background:rgba(255,255,255,.15); color:white; border:1px solid rgba(255,255,255,.3); padding:7px 18px; border-radius:4px; font-size:13px; cursor:pointer; font-family:'Google Sans',sans-serif; }
-  .override-copy:hover { background:rgba(255,255,255,.25); }
-  .override-warn { background:#fff8e1; border:1px solid #ffe082; border-radius:6px; padding:10px 14px; font-size:12px; color:#7a5800; margin-top:12px; line-height:1.5; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600;
+}
+.badge-active  { background: var(--green-light); color: #065f46; }
+.badge-expired { background: var(--surface-3);   color: var(--ink-4); }
+.badge-ended   { background: var(--red-light);   color: #991b1b; }
+.badge-pending { background: var(--orange-light); color: #92400e; }
+.badge-used    { background: var(--green-light);  color: #065f46; }
+
+.empty { padding: 24px; text-align: center; color: var(--ink-4); font-size: 13px; }
+
+/* ── Spinner ─────────────────────────────────────────────── */
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-left">
-    <div class="header-title">Quiz Admin Panel</div>
-    <div class="header-badge">ADMIN</div>
-  </div>
+<div class="topbar">
+  <div class="topbar-title">Quiz Admin Panel</div>
+  <div class="topbar-pill">Admin</div>
 </div>
 
-<div class="main">
+<div class="wrap">
 
-  <!-- Setup -->
+  <!-- ── Connection ── -->
   <div class="card">
-    <div class="card-body">
-      <div class="setup-section">
-        <strong>⚙️ Apps Script Connection</strong>
-        <div class="url-row">
-          <input class="text-input" type="url" id="api-url" placeholder="https://script.google.com/macros/s/…/exec">
+    <div class="card-bd">
+      <div class="setup-box">
+        <strong>⚙️ Apps Script URL</strong>
+        <div class="input-row">
+          <input class="input" type="url" id="api-url" placeholder="https://script.google.com/macros/s/…/exec">
           <button class="btn btn-outline btn-sm" onclick="saveUrl()">Connect</button>
         </div>
-        <div class="url-saved" id="url-saved">✓ Connected</div>
+        <div class="connected-note" id="connected-note">✓ Connected</div>
       </div>
-
-      <div class="field-group">
+      <div class="field">
         <label class="field-label">Admin Key</label>
-        <input class="text-input" type="password" id="admin-key" placeholder="Enter your admin key (default: ADMIN123)" value="ADMIN123">
+        <input class="input" type="password" id="admin-key" value="ADMIN123">
       </div>
     </div>
   </div>
 
-  <!-- Create Session -->
+  <!-- ── Create Session ── -->
   <div class="card">
-    <div class="card-header">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--purple)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93-2.67-1.14-5-4.43-5-7.93V7.18L12 5z"/></svg>
-      <h2>Create New Session</h2>
+    <div class="card-hd">
+      <div class="card-hd-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="var(--accent)" opacity=".2"/><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" stroke="var(--accent)" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+        </svg>
+        <h2>Create Session</h2>
+      </div>
     </div>
-    <div class="card-body">
-      <div class="row row-2">
-        <div class="field-group">
-          <label class="field-label">Department</label>
-          <input class="text-input" type="text" id="dept" placeholder="e.g. CS101">
+    <div class="card-bd">
+      <div class="grid-2">
+        <div class="field">
+          <label class="field-label">Department / Course</label>
+          <input class="input" type="text" id="dept" placeholder="e.g. CS101">
         </div>
-        <div class="field-group">
-          <label class="field-label">Duration (minutes)</label>
-          <input class="text-input" type="number" id="duration" value="90" min="5" max="300">
+        <div class="field">
+          <label class="field-label">Session Duration (minutes)</label>
+          <input class="input" type="number" id="duration" value="90" min="5" max="300">
         </div>
       </div>
-      <div class="row row-3">
-        <div class="field-group">
-          <label class="field-label">Classroom Latitude</label>
-          <input class="text-input" type="number" id="class-lat" step="any" placeholder="e.g. 5.6037">
+      <div class="grid-2">
+        <div class="field">
+          <label class="field-label">Quiz Timer (minutes)</label>
+          <input class="input" type="number" id="quiz-mins" value="30" min="1" max="180">
+          <div style="font-size:11px;color:var(--ink-3);margin-top:4px">Time students have to answer once they log in</div>
         </div>
-        <div class="field-group">
-          <label class="field-label">Classroom Longitude</label>
-          <input class="text-input" type="number" id="class-lng" step="any" placeholder="e.g. -0.1870">
-        </div>
-        <div class="field-group">
+        <div class="field">
           <label class="field-label">Radius (metres)</label>
-          <input class="text-input" type="number" id="radius" value="200" min="50" max="1000">
+          <input class="input" type="number" id="radius" value="200" min="50" max="1000">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label class="field-label">Classroom Latitude</label>
+          <input class="input" type="number" id="lat" step="any" placeholder="5.6037">
+        </div>
+        <div class="field">
+          <label class="field-label">Classroom Longitude</label>
+          <input class="input" type="number" id="lng" step="any" placeholder="-0.1870">
         </div>
       </div>
 
-      <div class="my-loc" id="my-loc"></div>
+      <div class="loc-note" id="loc-note"></div>
 
-      <button class="btn btn-outline btn-sm" onclick="useMyLocation()" style="margin-bottom:16px">
-        📍 Use my current location as classroom
-      </button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+        <button class="btn btn-outline btn-sm" onclick="useMyLocation()">📍 Use my location</button>
+        <button class="btn btn-accent btn-full" id="create-btn" onclick="createSession()" style="flex:1;min-width:180px">
+          Generate Session Code
+        </button>
+      </div>
 
-      <button class="btn btn-purple" id="create-btn" onclick="createSession()">
-        Generate Session Code
-      </button>
       <div class="alert" id="create-alert"></div>
 
-      <!-- Code display -->
-      <div class="code-display" id="code-display">
-        <div class="code-label">Today's Session Code</div>
-        <div class="code-number" id="code-number">------</div>
-        <div class="code-dept" id="code-dept"></div>
-        <div class="code-expires" id="code-expires"></div>
-        <button class="code-copy" onclick="copyCode()">📋 Copy Code</button>
+      <div class="code-stage" id="code-stage">
+        <div class="code-eyebrow">Today's Session Code</div>
+        <div class="code-big" id="code-big">——————</div>
+        <div class="code-meta" id="code-meta"></div>
+        <div class="code-expires-note" id="code-expires-note"></div>
+        <button class="code-copy-btn" onclick="copyCode()">📋 Copy Code</button>
       </div>
     </div>
   </div>
 
-  <!-- Device Override -->
+  <!-- ── Device Override ── -->
   <div class="card">
-    <div class="card-header">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--orange)"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-      <h2>Device Override</h2>
+    <div class="card-hd">
+      <div class="card-hd-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <rect x="5" y="11" width="14" height="10" rx="2" stroke="var(--orange)" stroke-width="1.5"/><path d="M8 11V7a4 4 0 118 0v4" stroke="var(--orange)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <h2>Device Override</h2>
+      </div>
     </div>
-    <div class="card-body">
-      <p style="font-size:13px;color:var(--gray-5);margin-bottom:16px;line-height:1.6">
-        Generate a one-time code for a student whose device is blocked (e.g. they borrowed a classmate's phone). 
-        The code is <strong>single-use</strong>, tied to that student ID only, and expires in <strong>10 minutes</strong>.
+    <div class="card-bd">
+      <p style="font-size:13px;color:var(--ink-3);margin-bottom:16px;line-height:1.6">
+        Generate a single-use override code for a student whose device is blocked. Code is tied to their Student ID and expires in 10 minutes.
       </p>
-      <div class="row row-2">
-        <div class="field-group">
+      <div class="grid-2" style="align-items:flex-end">
+        <div class="field" style="margin-bottom:0">
           <label class="field-label">Student ID</label>
-          <input class="text-input" type="text" id="override-student-id" placeholder="e.g. STU001" autocomplete="off" style="text-transform:uppercase">
+          <input class="input code-style" type="text" id="ov-student" placeholder="STU001" style="text-transform:uppercase">
         </div>
-        <div class="field-group" style="display:flex;align-items:flex-end">
-          <button class="btn btn-purple" id="override-btn" onclick="generateOverride()" style="width:100%">
-            🔓 Generate Override Code
-          </button>
-        </div>
+        <button class="btn btn-accent btn-full" id="ov-btn" onclick="generateOverride()">🔓 Generate Override</button>
       </div>
-      <div class="alert" id="override-alert"></div>
+      <div class="alert" id="ov-alert"></div>
 
-      <div class="override-display" id="override-display">
-        <div class="override-student" id="override-student-name"></div>
-        <div class="code-label" style="color:rgba(255,255,255,.7);font-size:11px;letter-spacing:1px;text-transform:uppercase">One-Time Override Code</div>
-        <div class="override-code-big" id="override-code-number">------</div>
-        <div class="override-expiry" id="override-expiry"></div>
-        <button class="override-copy" onclick="copyOverrideCode()">📋 Copy Code</button>
-        <div class="override-warn">⚠️ Read this code aloud to the student only. Do not display it on the projector. It is single-use and expires in 10 minutes.</div>
+      <div class="override-stage" id="ov-stage">
+        <div class="code-eyebrow" style="color:rgba(255,255,255,.6)">One-Time Override Code</div>
+        <div class="override-name" id="ov-student-name"></div>
+        <div class="override-code-big" id="ov-code-big">——————</div>
+        <div class="override-expiry" id="ov-expiry"></div>
+        <button class="code-copy-btn" onclick="copyOverrideCode()">📋 Copy Code</button>
+        <div class="override-warn">⚠️ Read this code aloud to the student only — do not show it on the projector. It is single-use and expires in 10 minutes.</div>
       </div>
 
-      <!-- Override log -->
-      <div style="margin-top:20px;border-top:1px solid var(--gray-2);padding-top:16px">
+      <div style="margin-top:20px;border-top:1px solid var(--surface-3);padding-top:16px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <span style="font-size:13px;font-weight:500;color:var(--gray-6)">Override Log (today)</span>
+          <span style="font-size:12px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.6px">Override Log (today)</span>
           <button class="btn btn-outline btn-sm" onclick="loadOverrides()">↻ Refresh</button>
         </div>
-        <div id="overrides-container">
-          <div class="empty-state" style="padding:16px">Generate an override to see the log.</div>
-        </div>
+        <div id="ov-log"><div class="empty">Generate an override to see the log.</div></div>
       </div>
     </div>
   </div>
 
-  <!-- Active Sessions -->
+  <!-- ── Sessions ── -->
   <div class="card">
-    <div class="card-header" style="justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:10px">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--purple)"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-        <h2>Sessions</h2>
+    <div class="card-hd">
+      <div class="card-hd-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="4" width="18" height="18" rx="2" stroke="var(--accent)" stroke-width="1.5"/>
+          <path d="M3 10h18M8 2v4M16 2v4" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <h2>Active Sessions</h2>
       </div>
       <button class="btn btn-outline btn-sm" onclick="loadSessions()">↻ Refresh</button>
     </div>
-    <div class="card-body" style="padding:0">
-      <div id="sessions-container">
-        <div class="empty-state">Click Refresh to load sessions</div>
-      </div>
-    </div>
+    <div id="sessions-wrap"><div class="empty">Click Refresh to load sessions.</div></div>
   </div>
 
 </div>
 
 <script>
 let API_URL = "";
-let myLat = null, myLng = null;
-let currentCode = "";
+let _currentCode = "", _currentOvCode = "";
 
+// ── Connect ───────────────────────────────────────────────
 function saveUrl() {
-  const v = document.getElementById('api-url').value.trim();
-  if (!v.startsWith('https://script.google.com')) { alert('Please enter a valid Apps Script URL.'); return; }
+  const v = document.getElementById("api-url").value.trim();
+  if (!v.startsWith("https://script.google.com")) { alert("Enter a valid Apps Script URL."); return; }
   API_URL = v;
-  document.getElementById('url-saved').style.display = 'block';
+  document.getElementById("connected-note").style.display = "block";
   loadSessions();
 }
 
-async function post(action, payload = {}) {
-  if (!API_URL) throw new Error("No Apps Script URL configured.");
+// ── API ───────────────────────────────────────────────────
+async function api(action, payload = {}) {
+  if (!API_URL) throw new Error("No Apps Script URL — please connect first.");
   const r = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, adminKey: document.getElementById('admin-key').value, ...payload })
+    body: JSON.stringify({ action, adminKey: document.getElementById("admin-key").value, ...payload })
   });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
 
-// Use lecturer's current GPS as classroom centre
+// ── GPS ───────────────────────────────────────────────────
 function useMyLocation() {
-  const locEl = document.getElementById('my-loc');
-  locEl.textContent = "Detecting location…";
-  locEl.classList.add('visible');
+  const note = document.getElementById("loc-note");
+  note.textContent = "Detecting…"; note.classList.add("show");
   navigator.geolocation.getCurrentPosition(pos => {
-    myLat = pos.coords.latitude;
-    myLng = pos.coords.longitude;
-    document.getElementById('class-lat').value = myLat.toFixed(6);
-    document.getElementById('class-lng').value = myLng.toFixed(6);
-    locEl.textContent = `📍 Using your location: ${myLat.toFixed(5)}, ${myLng.toFixed(5)} (±${Math.round(pos.coords.accuracy)}m)`;
-  }, err => {
-    locEl.textContent = "Could not get location: " + err.message;
-  }, { enableHighAccuracy: true, timeout: 15000 });
+    document.getElementById("lat").value = pos.coords.latitude.toFixed(6);
+    document.getElementById("lng").value = pos.coords.longitude.toFixed(6);
+    note.textContent = `📍 ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)} (±${Math.round(pos.coords.accuracy)}m)`;
+  }, err => { note.textContent = "Location error: " + err.message; },
+  { enableHighAccuracy: true, timeout: 15000 });
 }
 
+// ── Create Session ─────────────────────────────────────────
 async function createSession() {
-  const dept     = document.getElementById('dept').value.trim();
-  const classLat = parseFloat(document.getElementById('class-lat').value);
-  const classLng = parseFloat(document.getElementById('class-lng').value);
-  const radius   = parseInt(document.getElementById('radius').value) || 200;
-  const duration = parseInt(document.getElementById('duration').value) || 90;
-  const alertEl  = document.getElementById('create-alert');
-  const btn      = document.getElementById('create-btn');
+  const dept    = document.getElementById("dept").value.trim();
+  const clat    = parseFloat(document.getElementById("lat").value);
+  const clng    = parseFloat(document.getElementById("lng").value);
+  const rad     = parseInt(document.getElementById("radius").value) || 200;
+  const dur     = parseInt(document.getElementById("duration").value) || 90;
+  const qMins   = parseInt(document.getElementById("quiz-mins").value) || 30;
+  const alertEl = document.getElementById("create-alert");
+  const btn     = document.getElementById("create-btn");
 
-  alertEl.className = 'alert'; alertEl.textContent = '';
+  hideAlert("create-alert");
+  if (!dept)              return showAlert("create-alert", "error", "Enter a department code.");
+  if (isNaN(clat) || isNaN(clng)) return showAlert("create-alert", "error", "Enter classroom coordinates or use "Use my location".");
 
-  if (!dept) { showAlert(alertEl, 'error', 'Please enter a department.'); return; }
-  if (isNaN(classLat) || isNaN(classLng)) { showAlert(alertEl, 'error', 'Please enter valid classroom coordinates. Use "Use my current location" if in class.'); return; }
-
-  btn.disabled = true;
-  btn.innerHTML = `<div class="spinner"></div> Generating…`;
-
+  btn.disabled = true; btn.innerHTML = `<div class="spinner"></div> Generating…`;
   try {
-    const d = await post("create_session", { dept, classLat, classLng, radiusMeters: radius, durationMinutes: duration });
+    const d = await api("create_session", { dept, classLat: clat, classLng: clng, radiusMeters: rad, durationMinutes: dur, quizMinutes: qMins });
     if (d.ok) {
-      currentCode = d.code;
-      document.getElementById('code-number').textContent = d.code;
-      document.getElementById('code-dept').textContent   = `Department: ${d.dept}`;
-      document.getElementById('code-expires').textContent = `Expires: ${new Date(d.expires).toLocaleTimeString()} · Radius: ${d.radiusMeters}m`;
-      document.getElementById('code-display').classList.add('visible');
-      showAlert(alertEl, 'success', `✓ Session created for ${d.dept}. Show the code above on the projector.`);
+      _currentCode = d.code;
+      document.getElementById("code-big").textContent = d.code;
+      document.getElementById("code-meta").textContent = `Department: ${d.dept} · Radius: ${d.radiusMeters}m · Quiz: ${d.quizMinutes} min`;
+      document.getElementById("code-expires-note").textContent = `Session expires: ${new Date(d.expires).toLocaleTimeString()}`;
+      document.getElementById("code-stage").classList.add("show");
+      showAlert("create-alert", "success", `✓ Session created for ${d.dept}. Display the code above on the projector.`);
       loadSessions();
     } else {
-      showAlert(alertEl, 'error', 'Failed: ' + (d.error || 'unknown'));
+      showAlert("create-alert", "error", "Failed: " + (d.error || "unknown"));
     }
-  } catch(e) { showAlert(alertEl, 'error', 'Error: ' + e.message); }
-  finally { btn.disabled = false; btn.innerHTML = 'Generate Session Code'; }
+  } catch (e) { showAlert("create-alert", "error", "Error: " + e.message); }
+  finally { btn.disabled = false; btn.textContent = "Generate Session Code"; }
 }
 
 function copyCode() {
-  navigator.clipboard.writeText(currentCode).then(() => {
-    const btn = document.querySelector('.code-copy');
-    btn.textContent = '✓ Copied!';
-    setTimeout(() => btn.textContent = '📋 Copy Code', 2000);
+  navigator.clipboard.writeText(_currentCode).then(() => {
+    const btn = document.querySelector(".code-copy-btn");
+    btn.textContent = "✓ Copied!";
+    setTimeout(() => btn.textContent = "📋 Copy Code", 2000);
   });
 }
 
+// ── Sessions table ─────────────────────────────────────────
 async function loadSessions() {
-  const container = document.getElementById('sessions-container');
-  container.innerHTML = '<div class="empty-state">Loading…</div>';
+  const wrap = document.getElementById("sessions-wrap");
+  wrap.innerHTML = `<div class="empty">Loading…</div>`;
   try {
-    const d = await post("get_sessions");
-    if (!d.ok) { container.innerHTML = `<div class="empty-state">Error: ${d.error}</div>`; return; }
-    if (!d.sessions.length) { container.innerHTML = '<div class="empty-state">No sessions yet. Create one above.</div>'; return; }
+    const d = await api("get_sessions");
+    if (!d.ok) { wrap.innerHTML = `<div class="empty">Error: ${d.error}</div>`; return; }
+    if (!d.sessions.length) { wrap.innerHTML = `<div class="empty">No sessions yet.</div>`; return; }
 
-    const now = new Date();
     const rows = d.sessions.map(s => {
-      const isActive  = s.active && !s.expired;
-      const isExpired = s.expired;
+      const isActive = s.active && !s.expired;
       const badge = isActive
         ? `<span class="badge badge-active">● Active</span>`
-        : isExpired
-          ? `<span class="badge badge-expired">Expired</span>`
-          : `<span class="badge badge-ended">Ended</span>`;
+        : s.expired ? `<span class="badge badge-expired">Expired</span>`
+                    : `<span class="badge badge-ended">Ended</span>`;
       const endBtn = isActive
-        ? `<button class="btn btn-red btn-sm" onclick="endSession('${s.dept}')">End</button>`
-        : '';
+        ? `<button class="btn btn-danger btn-sm" onclick="endSession('${s.dept}')">End</button>` : "";
       return `<tr>
-        <td><strong>${s.code}</strong></td>
+        <td><strong style="font-family:'DM Mono',monospace;letter-spacing:2px">${s.code}</strong></td>
         <td>${s.dept}</td>
         <td>${badge}</td>
-        <td style="color:var(--gray-5)">${new Date(s.expires).toLocaleTimeString()}</td>
+        <td style="color:var(--ink-3)">${s.quizMinutes || "—"} min</td>
+        <td style="color:var(--ink-3)">${new Date(s.expires).toLocaleTimeString()}</td>
         <td>${endBtn}</td>
       </tr>`;
-    }).join('');
+    }).join("");
 
-    container.innerHTML = `
-      <table class="sessions-table">
-        <thead><tr>
-          <th>Code</th><th>Department</th><th>Status</th><th>Expires</th><th></th>
-        </tr></thead>
+    wrap.innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>Code</th><th>Dept</th><th>Status</th><th>Quiz Timer</th><th>Expires</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
-  } catch(e) { container.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`; }
+  } catch (e) { wrap.innerHTML = `<div class="empty">Error: ${e.message}</div>`; }
 }
 
 async function endSession(dept) {
   if (!confirm(`End the active session for ${dept}?`)) return;
   try {
-    const d = await post("end_session", { dept });
-    if (d.ok) { loadSessions(); document.getElementById('code-display').classList.remove('visible'); }
+    const d = await api("end_session", { dept });
+    if (d.ok) { loadSessions(); document.getElementById("code-stage").classList.remove("show"); }
     else alert("Failed: " + d.error);
-  } catch(e) { alert("Error: " + e.message); }
+  } catch (e) { alert("Error: " + e.message); }
 }
 
-let currentOverrideCode = "";
-
+// ── Override ───────────────────────────────────────────────
 async function generateOverride() {
-  const studentId = document.getElementById('override-student-id').value.trim().toUpperCase();
-  const alertEl   = document.getElementById('override-alert');
-  const btn       = document.getElementById('override-btn');
-  alertEl.className = 'alert'; alertEl.textContent = '';
-
-  if (!studentId) { showAlert(alertEl, 'error', 'Please enter a Student ID.'); return; }
-  if (!API_URL)   { showAlert(alertEl, 'error', 'Please connect your Apps Script URL first.'); return; }
+  const sid   = document.getElementById("ov-student").value.trim().toUpperCase();
+  const btn   = document.getElementById("ov-btn");
+  hideAlert("ov-alert");
+  if (!sid)      return showAlert("ov-alert", "error", "Enter a Student ID.");
+  if (!API_URL)  return showAlert("ov-alert", "error", "Connect your Apps Script URL first.");
 
   btn.disabled = true; btn.innerHTML = `<div class="spinner"></div> Generating…`;
   try {
-    const d = await post("generate_override", { studentId });
+    const d = await api("generate_override", { studentId: sid });
     if (d.ok) {
-      currentOverrideCode = d.code;
-      document.getElementById('override-student-name').textContent = `${d.studentName} · ${d.studentId}`;
-      document.getElementById('override-code-number').textContent = d.code;
-      document.getElementById('override-expiry').textContent = `Expires at ${new Date(d.expiresAt).toLocaleTimeString()} (10 minutes)`;
-      document.getElementById('override-display').classList.add('visible');
-      showAlert(alertEl, 'success', `✓ Override code generated for ${d.studentName}. Tell them verbally.`);
+      _currentOvCode = d.code;
+      document.getElementById("ov-student-name").textContent = `${d.studentName} · ${d.studentId}`;
+      document.getElementById("ov-code-big").textContent = d.code;
+      document.getElementById("ov-expiry").textContent = `Expires at ${new Date(d.expiresAt).toLocaleTimeString()}`;
+      document.getElementById("ov-stage").classList.add("show");
+      showAlert("ov-alert", "success", `✓ Override code generated for ${d.studentName}. Read it to them verbally.`);
       loadOverrides();
     } else {
       const msgs = { student_not_found: "Student ID not found in the Users sheet.", unauthorized: "Invalid admin key." };
-      showAlert(alertEl, 'error', msgs[d.error] || "Failed: " + (d.error || "unknown"));
+      showAlert("ov-alert", "error", msgs[d.error] || "Failed: " + (d.error || "unknown"));
     }
-  } catch(e) { showAlert(alertEl, 'error', 'Error: ' + e.message); }
-  finally { btn.disabled = false; btn.innerHTML = '🔓 Generate Override Code'; }
+  } catch (e) { showAlert("ov-alert", "error", "Error: " + e.message); }
+  finally { btn.disabled = false; btn.innerHTML = "🔓 Generate Override"; }
 }
 
 function copyOverrideCode() {
-  navigator.clipboard.writeText(currentOverrideCode).then(() => {
-    const btn = document.querySelector('.override-copy');
-    btn.textContent = '✓ Copied!';
-    setTimeout(() => btn.textContent = '📋 Copy Code', 2000);
+  navigator.clipboard.writeText(_currentOvCode).then(() => {
+    const btns = document.querySelectorAll(".code-copy-btn");
+    btns[btns.length - 1].textContent = "✓ Copied!";
+    setTimeout(() => btns[btns.length - 1].textContent = "📋 Copy Code", 2000);
   });
 }
 
 async function loadOverrides() {
-  const container = document.getElementById('overrides-container');
+  const log = document.getElementById("ov-log");
   try {
-    const d = await post("get_overrides");
-    if (!d.ok || !d.overrides.length) {
-      container.innerHTML = '<div class="empty-state" style="padding:16px">No overrides generated today.</div>'; return;
-    }
+    const d = await api("get_overrides");
+    if (!d.ok || !d.overrides.length) { log.innerHTML = `<div class="empty">No overrides today.</div>`; return; }
     const today = new Date().toDateString();
-    const todayItems = d.overrides.filter(o => new Date(o.generatedAt).toDateString() === today);
-    if (!todayItems.length) {
-      container.innerHTML = '<div class="empty-state" style="padding:16px">No overrides generated today.</div>'; return;
-    }
-    const rows = todayItems.map(o => {
-      const statusColor = o.used ? 'var(--green)' : o.expired ? 'var(--gray-4)' : 'var(--orange)';
-      const status = o.used ? '✓ Used' : o.expired ? 'Expired' : '⏳ Pending';
+    const items = d.overrides.filter(o => new Date(o.generatedAt).toDateString() === today);
+    if (!items.length) { log.innerHTML = `<div class="empty">No overrides today.</div>`; return; }
+
+    const rows = items.map(o => {
+      const badge = o.used    ? `<span class="badge badge-used">Used</span>`
+                  : o.expired ? `<span class="badge badge-expired">Expired</span>`
+                              : `<span class="badge badge-pending">Pending</span>`;
       return `<tr>
-        <td><strong style="letter-spacing:2px">${o.code}</strong></td>
+        <td><strong style="font-family:'DM Mono',monospace;letter-spacing:3px">${o.code}</strong></td>
         <td>${o.studentId}</td>
-        <td style="color:${statusColor};font-weight:500;font-size:12px">${status}</td>
-        <td style="color:var(--gray-5);font-size:12px">${new Date(o.expiresAt).toLocaleTimeString()}</td>
-        <td style="color:var(--gray-5);font-size:12px">${o.usedAt ? new Date(o.usedAt).toLocaleTimeString() : '—'}</td>
+        <td>${badge}</td>
+        <td style="color:var(--ink-3)">${new Date(o.expiresAt).toLocaleTimeString()}</td>
+        <td style="color:var(--ink-3)">${o.usedAt ? new Date(o.usedAt).toLocaleTimeString() : "—"}</td>
       </tr>`;
-    }).join('');
-    container.innerHTML = `
-      <table class="sessions-table">
+    }).join("");
+
+    log.innerHTML = `
+      <table class="data-table">
         <thead><tr><th>Code</th><th>Student</th><th>Status</th><th>Expires</th><th>Used At</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
-  } catch(e) { container.innerHTML = `<div class="empty-state" style="padding:16px">Error: ${e.message}</div>`; }
+  } catch (e) { log.innerHTML = `<div class="empty">Error: ${e.message}</div>`; }
 }
 
-function showAlert(el, type, msg) {
-  el.className = `alert alert-${type} visible`;
+// ── Alert helpers ─────────────────────────────────────────
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `alert alert-${type} show`;
   el.textContent = msg;
+}
+function hideAlert(id) {
+  document.getElementById(id).classList.remove("show");
 }
 </script>
 </body>
