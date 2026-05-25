@@ -406,18 +406,20 @@ let API_URL = "";
 let _currentCode = "", _currentOvCode = "";
 
 // ── Connect ───────────────────────────────────────────────
+// Apps Script blocks cross-origin GET requests (no CORS headers on doGet).
+// We test the connection with a lightweight POST to get_sessions instead —
+// Apps Script allows cross-origin POST with Content-Type: text/plain.
 async function saveUrl() {
-  const raw = document.getElementById("api-url").value.trim();
+  const raw  = document.getElementById("api-url").value.trim();
   const note = document.getElementById("connected-note");
   const btn  = document.querySelector(".setup-box .btn-outline");
 
-  // Strip any accidental trailing slashes or query strings the user pasted
-  const v = raw.replace(/\/+$/, "").split("?")[0].trim();
+  const v = raw.replace(/\/+$/, "").trim();
 
   if (!v.startsWith("https://script.google.com/macros/s/")) {
-    note.style.display  = "block";
-    note.style.color    = "var(--red)";
-    note.textContent    = "✗ Not a valid Apps Script URL — should start with https://script.google.com/macros/s/";
+    note.style.display = "block";
+    note.style.color   = "var(--red)";
+    note.textContent   = "✗ Invalid URL — must start with https://script.google.com/macros/s/";
     return;
   }
 
@@ -426,56 +428,39 @@ async function saveUrl() {
   note.textContent   = "Testing connection…";
   if (btn) { btn.disabled = true; btn.textContent = "Testing…"; }
 
-  API_URL = v;
+  API_URL = v; // Set before calling api()
 
-  // Test with a GET ping — doGet() returns { ok: true, message: "Quiz API is running" }
   try {
-    const r = await fetch(API_URL, {
-      method: "GET",
-      redirect: "follow"
-    });
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const d = await r.json();
-    if (d.ok) {
-      note.style.color = "var(--green)";
-      note.textContent = "✓ Connected successfully";
-      try { localStorage.setItem("quiz_admin_api_url", v); } catch (_) {}
-      loadSessions();
-    } else {
-      throw new Error(d.message || "Unexpected response");
-    }
+    const d = await api("get_sessions"); // Lightweight POST test
+    // Any valid JSON response (even unauthorized) means the URL is reachable
+    note.style.color = "var(--green)";
+    note.textContent = "✓ Connected";
+    try { localStorage.setItem("quiz_admin_api_url", v); } catch (_) {}
+    if (d.ok) _renderSessions(d.sessions);
   } catch (e) {
     API_URL = "";
     note.style.color = "var(--red)";
-    note.textContent = "✗ Connection failed: " + e.message + " — check the URL and that the script is deployed as \"Anyone\" can access";
+    note.textContent = "✗ Failed: " + e.message;
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = "Connect"; }
   }
 }
 
 // ── API ───────────────────────────────────────────────────
-// Apps Script deployments redirect the POST request.
-// Using redirect:"follow" and no-cache headers ensures the
-// final response is read, not the intermediate 302.
+// Apps Script requires Content-Type: text/plain (not application/json)
+// to avoid triggering a CORS preflight that it cannot satisfy.
 async function api(action, payload = {}) {
-  if (!API_URL) {
-    throw new Error("Not connected — paste your Apps Script URL and click Connect first.");
-  }
+  if (!API_URL) throw new Error("Not connected — paste the Apps Script URL and click Connect.");
   const r = await fetch(API_URL, {
     method: "POST",
     redirect: "follow",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({ action, adminKey: document.getElementById("admin-key").value, ...payload })
   });
-  // Apps Script always returns 200 on the final response even for errors;
-  // non-200 here means the redirect chain itself failed (network/CORS issue)
-  if (!r.ok) throw new Error(`HTTP ${r.status} — check the URL and deployment permissions`);
+  if (!r.ok) throw new Error("HTTP " + r.status);
   const text = await r.text();
-  try {
-    return JSON.parse(text);
-  } catch (_) {
-    throw new Error("Invalid response from server — got: " + text.slice(0, 120));
-  }
+  try { return JSON.parse(text); }
+  catch (_) { throw new Error("Bad response: " + text.slice(0, 120)); }
 }
 
 // ── GPS ───────────────────────────────────────────────────
@@ -538,32 +523,37 @@ async function loadSessions() {
   try {
     const d = await api("get_sessions");
     if (!d.ok) { wrap.innerHTML = `<div class="empty">Error: ${d.error}</div>`; return; }
-    if (!d.sessions.length) { wrap.innerHTML = `<div class="empty">No sessions yet.</div>`; return; }
-
-    const rows = d.sessions.map(s => {
-      const isActive = s.active && !s.expired;
-      const badge = isActive
-        ? `<span class="badge badge-active">● Active</span>`
-        : s.expired ? `<span class="badge badge-expired">Expired</span>`
-                    : `<span class="badge badge-ended">Ended</span>`;
-      const endBtn = isActive
-        ? `<button class="btn btn-danger btn-sm" onclick="endSession('${s.dept}')">End</button>` : "";
-      return `<tr>
-        <td><strong style="font-family:'DM Mono',monospace;letter-spacing:2px">${s.code}</strong></td>
-        <td>${s.dept}</td>
-        <td>${badge}</td>
-        <td style="color:var(--ink-3)">${s.quizMinutes || "—"} min</td>
-        <td style="color:var(--ink-3)">${new Date(s.expires).toLocaleTimeString()}</td>
-        <td>${endBtn}</td>
-      </tr>`;
-    }).join("");
-
-    wrap.innerHTML = `
-      <table class="data-table">
-        <thead><tr><th>Code</th><th>Dept</th><th>Status</th><th>Quiz Timer</th><th>Expires</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
+    _renderSessions(d.sessions);
   } catch (e) { wrap.innerHTML = `<div class="empty">Error: ${e.message}</div>`; }
+}
+
+function _renderSessions(sessions) {
+  const wrap = document.getElementById("sessions-wrap");
+  if (!sessions || !sessions.length) { wrap.innerHTML = `<div class="empty">No sessions yet.</div>`; return; }
+
+  const rows = sessions.map(s => {
+    const isActive = s.active && !s.expired;
+    const badge = isActive
+      ? `<span class="badge badge-active">● Active</span>`
+      : s.expired ? `<span class="badge badge-expired">Expired</span>`
+                  : `<span class="badge badge-ended">Ended</span>`;
+    const endBtn = isActive
+      ? `<button class="btn btn-danger btn-sm" onclick="endSession('${s.dept}')">End</button>` : "";
+    return `<tr>
+      <td><strong style="font-family:'DM Mono',monospace;letter-spacing:2px">${s.code}</strong></td>
+      <td>${s.dept}</td>
+      <td>${badge}</td>
+      <td style="color:var(--ink-3)">${s.quizMinutes || "—"} min</td>
+      <td style="color:var(--ink-3)">${new Date(s.expires).toLocaleTimeString()}</td>
+      <td>${endBtn}</td>
+    </tr>`;
+  }).join("");
+
+  wrap.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Code</th><th>Dept</th><th>Status</th><th>Quiz Timer</th><th>Expires</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 async function endSession(dept) {
