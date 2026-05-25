@@ -589,13 +589,17 @@ async function api(action, payload = {}) {
 
 // ── GPS toggle ────────────────────────────────────────────
 function onGpsToggle() {
-  const on    = document.getElementById("gps-required").checked;
+  const isRequired = document.getElementById("gps-required").checked;
   const track = document.getElementById("gps-track");
   const thumb = document.getElementById("gps-thumb");
-  const wrap  = document.getElementById("coords-wrap");
-  track.style.background    = on ? "var(--accent)" : "var(--ink-4)";
-  thumb.style.transform     = on ? "translateX(20px)" : "translateX(0)";
-  wrap.style.display        = on ? "block" : "none";
+  const wrap = document.getElementById("coords-wrap");
+
+  // Update toggle visual
+  track.style.background = isRequired ? "var(--accent)" : "var(--ink-4)";
+  thumb.style.transform = isRequired ? "translateX(20px)" : "translateX(0)";
+
+  // Show/hide coordinates
+  wrap.style.display = isRequired ? "block" : "none";
 }
 
 // ── GPS location ──────────────────────────────────────────
@@ -610,47 +614,69 @@ function useMyLocation() {
   { enableHighAccuracy: true, timeout: 15000 });
 }
 
+
 // ── Create Session ─────────────────────────────────────────
 async function createSession() {
-  const dept       = document.getElementById("dept").value.trim();
-  const clat       = parseFloat(document.getElementById("lat").value);
-  const clng       = parseFloat(document.getElementById("lng").value);
-  const rad        = parseInt(document.getElementById("radius").value) || 200;
-  const dur        = parseInt(document.getElementById("duration").value) || 90;
-  const qMins      = parseInt(document.getElementById("quiz-mins").value) || 30;
-  const gpsOn      = document.getElementById("gps-required").checked;
-  const alertEl    = document.getElementById("create-alert");
-  const btn        = document.getElementById("create-btn");
+  const dept = document.getElementById("dept").value.trim();
+  const clat = parseFloat(document.getElementById("lat").value) || 0;
+  const clng = parseFloat(document.getElementById("lng").value) || 0;
+  const rad = parseInt(document.getElementById("radius").value) || 200;
+  const dur = parseInt(document.getElementById("duration").value) || 90;
+  const qMins = parseInt(document.getElementById("quiz-mins").value) || 30;
+  const gpsRequired = document.getElementById("gps-required").checked;
+
+  const alertEl = document.getElementById("create-alert");
+  const btn = document.getElementById("create-btn");
 
   hideAlert("create-alert");
-  if (!dept) return showAlert("create-alert", "error", "Enter a department code.");
-  if (gpsOn && (isNaN(clat) || isNaN(clng)))
-    return showAlert("create-alert", "error", "Enter classroom coordinates, or turn off GPS requirement.");
 
-  btn.disabled = true; btn.innerHTML = `<div class="spinner"></div> Generating…`;
+  if (!dept) {
+    return showAlert("create-alert", "error", "Enter a department code.");
+  }
+
+  // Validate coordinates only when GPS is required
+  if (gpsRequired && (isNaN(clat) || isNaN(clng) || clat === 0 || clng === 0)) {
+    return showAlert("create-alert", "error", "Please enter valid classroom coordinates when GPS is required.");
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Generating…`;
+
   try {
     const d = await api("create_session", {
-      dept, classLat: gpsOn ? clat : 0, classLng: gpsOn ? clng : 0,
-      radiusMeters: rad, durationMinutes: dur, quizMinutes: qMins,
-      gpsRequired: gpsOn
+      dept,
+      classLat: clat,
+      classLng: clng,
+      radiusMeters: rad,
+      durationMinutes: dur,
+      quizMinutes: qMins,
+      gpsRequired: gpsRequired
     });
+
     if (d.ok) {
       _currentCode = d.code;
+
       document.getElementById("code-big").textContent = d.code;
-      document.getElementById("code-meta").textContent =
+      document.getElementById("code-meta").textContent = 
         `${d.dept} · Quiz: ${d.quizMinutes} min · GPS: ${d.gpsRequired ? "On" : "Off"}`;
-      document.getElementById("code-expires-note").textContent =
+      document.getElementById("code-expires-note").textContent = 
         `Session expires: ${new Date(d.expires).toLocaleTimeString()}`;
+
       document.getElementById("code-stage").classList.add("show");
       showAlert("create-alert", "success", `✓ Session created for ${d.dept}`);
-      loadSessions();
+
+      loadSessions(); // Refresh active sessions
     } else {
       showAlert("create-alert", "error", "Failed: " + (d.error || "unknown"));
     }
-  } catch (e) { showAlert("create-alert", "error", "Error: " + e.message); }
-  finally { btn.disabled = false; btn.textContent = "Generate Session Code"; }
+  } catch (e) {
+    showAlert("create-alert", "error", "Error: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Generate Session Code";
+  }
 }
-
+  
 function copyCode() {
   navigator.clipboard.writeText(_currentCode).then(() => {
     const btn = document.querySelector(".code-copy-btn");
@@ -672,19 +698,30 @@ async function loadSessions() {
 
 function _renderSessions(sessions) {
   const wrap = document.getElementById("sessions-wrap");
-  if (!sessions || !sessions.length) { wrap.innerHTML = `<div class="empty">No sessions yet.</div>`; return; }
+  if (!sessions || !sessions.length) {
+    wrap.innerHTML = `<div class="empty">No sessions yet.</div>`;
+    return;
+  }
 
   const rows = sessions.map(s => {
     const isActive = s.active && !s.expired;
     const badge = isActive
       ? `<span class="badge badge-active">● Active</span>`
-      : s.expired ? `<span class="badge badge-expired">Expired</span>`
-                  : `<span class="badge badge-ended">Ended</span>`;
-    const gpsBadge = s.gpsRequired === false
+      : s.expired 
+        ? `<span class="badge badge-expired">Expired</span>`
+        : `<span class="badge badge-ended">Ended</span>`;
+
+    // Robust GPS status check
+    const gpsReq = s.gpsRequired === false || 
+                   String(s.gpsRequired).toLowerCase() === "false";
+    const gpsBadge = gpsReq === false
       ? `<span class="badge" style="background:#fef9c3;color:#854d0e">GPS Off</span>`
       : `<span class="badge" style="background:#dcfce7;color:#166534">GPS On</span>`;
+
     const endBtn = isActive
-      ? `<button class="btn btn-danger btn-sm" onclick="endSession('${s.dept}')">End</button>` : "";
+      ? `<button class="btn btn-danger btn-sm" onclick="endSession('${s.dept}')">End</button>`
+      : "";
+
     return `<tr>
       <td><strong style="font-family:'DM Mono',monospace;letter-spacing:2px">${s.code}</strong></td>
       <td>${s.dept}</td>
@@ -799,6 +836,10 @@ function hideAlert(id) {
     }
   } catch (_) {}
 })();
+// Initialize toggle state when page loads
+document.addEventListener("DOMContentLoaded", () => {
+  onGpsToggle();
+});  
 </script>
 </body>
 </html>
