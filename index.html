@@ -710,14 +710,6 @@ function _renderSessions(sessions) {
         : `<span class="badge badge-ended">Ended</span>`;
 
     // Robust GPS status check
-    // BEFORE (same precedence bug as Code.gs):
-    const gpsReq = s.gpsRequired === false || 
-                   String(s.gpsRequired).toLowerCase() === "false";
-    const gpsBadge = gpsReq === false
-      ? `<span class="badge" ...>GPS Off</span>`
-      : `<span class="badge" ...>GPS On</span>`;
-    
-    // AFTER — gpsRequired is already a proper boolean from the server after the Code.gs fix:
     const gpsOn = s.gpsRequired === true;
     const gpsBadge = gpsOn
       ? `<span class="badge" style="background:#dcfce7;color:#166534">GPS On</span>`
